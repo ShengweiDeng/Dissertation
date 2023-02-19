@@ -1,0 +1,38 @@
+// define the countries of interest in this list
+// var countryList = ["China"];
+// print(ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'));
+// import the country boundaries and filter for the countries of interest
+// var countries = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017').filter(ee.Filter.inList("country_na", countryList));
+
+// add the layer to the map
+Map.addLayer(countries,{},"countries of interest");
+// Night light
+var nightlight = ee.ImageCollection("NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG");
+// time
+var start = ee.Date.fromYMD(2021,1,1);
+var end = ee.Date.fromYMD(2021,12,31);
+// filter date
+var nightlights = nightlight.filterDate(start,end);
+// mean compose
+nightlights = ee.Image(nightlights.mean());
+// band selection
+nightlights = nightlights.select("avg_rad");
+// aoi
+nightlights = nightlights.clip(countries);
+Map.addLayer(nightlights,{min:0, max:60})
+
+var means = nightlights.reduceRegions({
+  reducer: ee.Reducer.mean(),
+  collection: countries,
+  scale: 500,
+  // maxPixels: 1e13
+});
+
+print(means);
+
+Export.table.toDrive({
+  collection: means, 
+  folder: 'gee-mix', 
+  fileFormat: 'csv', 
+  description: 'nightlight-uk'
+})
